@@ -1298,32 +1298,29 @@ const instruction* op_submod384(const instruction* instr, execution_state& state
 
 const instruction* op_mulmodmont384(const instruction* instr, execution_state& state) noexcept
 {
-    const auto out_offset = state.stack.pop();
-    const auto x_offset = state.stack.pop();
-    const auto y_offset = state.stack.pop();
-    const auto m_offset = state.stack.pop();
-    const auto inv = state.stack.pop();
+    // TODO: Don't pop/push the 2 top items, but reuse them.
+    const auto x_hi = state.stack.pop();
+    const auto x_lo = state.stack.pop();
+    const auto y_hi = state.stack.pop();
+    const auto y_lo = state.stack.pop();
+    auto mi_hi = state.stack.pop();
+    const auto mi_lo = state.stack.pop();
 
-    if (inv > std::numeric_limits<uint64_t>::max())
-        return state.exit(EVMC_OUT_OF_GAS);
+    // Top 64-bits is the inv
+    const auto inv = (mi0 >> 128) & ((1 << 64) - 1);
+    // Bottom 128-bits is the hi of mod
+    mi0 &= (1 << 128) - 1;
 
-    const auto max_memory_index = std::max(std::max(x_offset, y_offset), std::max(m_offset, out_offset));
+    // FIXME: Implement
+//    montmul384_64bitlimbs(
+//        reinterpret_cast<uint64_t*>(out),
+//        reinterpret_cast<uint64_t*>(x),
+//        reinterpret_cast<uint64_t*>(y),
+//        reinterpret_cast<uint64_t*>(m),
+//        static_cast<uint64_t>(inv)
+//    );
 
-    if (!check_memory(state, max_memory_index, 48))
-         return nullptr;
-
-    const auto out = &state.memory[static_cast<size_t>(out_offset)];
-    const auto x = &state.memory[static_cast<size_t>(x_offset)];
-    const auto y = &state.memory[static_cast<size_t>(y_offset)];
-    const auto m = &state.memory[static_cast<size_t>(m_offset)];
-
-    montmul384_64bitlimbs(
-        reinterpret_cast<uint64_t*>(out),
-        reinterpret_cast<uint64_t*>(x),
-        reinterpret_cast<uint64_t*>(y),
-        reinterpret_cast<uint64_t*>(m),
-        static_cast<uint64_t>(inv)
-    );
+    abort();
 
     return ++instr;
 }
